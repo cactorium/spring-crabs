@@ -28,6 +28,13 @@ window.addEventListener('load', function() {
   window.addEventListener('resize', function() {
     crabs.resize()
   })
+
+  document.body.addEventListener('dragstart', function() {
+    return false
+  })
+  document.body.addEventListener('drop', function() {
+    return false
+  })
 })
 </script>
   </head>

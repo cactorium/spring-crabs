@@ -152,6 +152,18 @@ function Renderer() {
   this.MASS_RADIUS = 3.0
   this.MASS_SELECT_RADIUS = 7.0
 
+  this.MASS_COLOR = '#222222'
+  this.SELECTED_MASS_COLOR = '#111111'
+  this.ACTIVE_MASS_COLOR = '#000000'
+
+  this.itemSelected = false
+
+  // transform from physics to screen
+  this.transform = function(crabs, vec) {
+    return new Vec(vec.x, crabs.height - vec.y)
+  }
+
+  // transform from screen to physics
   this.transform = function(crabs, vec) {
     return new Vec(vec.x, crabs.height - vec.y)
   }
@@ -168,29 +180,43 @@ function Renderer() {
       crabs.ids.forEach(function(id) {
         if (physics.masses[id]) {
           var mass = physics.masses[id]
-          // TODO: draw mass
           var screenPos = me.transform(crabs, mass.pos)
-          canvas.fillStyle = '#222222'
+          // log(log.DEBUG, 'mass ' + id + ' at ' + screenPos.x + ', ' + screenPos.y)
+
+          if (me.selected == id) {
+            // TOOD: draw selection symbol
+            if (me.itemSelected) {
+              canvas.strokeStyle = me.ACTIVE_MASS_COLOR
+              canvas.fillStyle = me.ACTIVE_MASS_COLOR
+            } else {
+              canvas.strokeStyle = me.SELECTED_MASS_COLOR
+              canvas.fillStyle = me.SELECTED_MASS_COLOR
+            }
+          } else {
+            canvas.fillStyle = me.MASS_COLOR
+          }
+
           canvas.beginPath()
           canvas.arc(screenPos.x, screenPos.y, me.MASS_RADIUS, 0, Math.PI*2)
           canvas.fill()
-          // log(log.DEBUG, 'mass ' + id + ' at ' + screenPos.x + ', ' + screenPos.y)
 
-          if (crabs.ui.selected == id) {
-            // TOOD: draw selection symbol
-            canvas.strokeStyle = '#000000'
+          if (me.selected == id) {
             canvas.beginPath()
             canvas.arc(screenPos.x, screenPos.y, 0, Math.PI*2, me.MASS_SELECT_RADIUS)
             canvas.stroke()
           }
         }
+      })
+      crabs.ids.forEach(function(id) {
         if (physics.springs[id]) {
           var spring = physics.springs[id]
           var a = physics.masses[spring.ida],
               b = physics.masses[spring.idb]
           if (physics.muscles[id]) {
             // TODO: draw muscle
+            canvas.strokeStyle = '#000000'
           } else {
+            canvas.strokeStyle = '#222222'
             // TODO: draw spring
           }
 
@@ -219,6 +245,17 @@ function Renderer() {
 
 function UI() {
   this.ui = null
+
+  this.mousemove = function(crabs, e) {
+    var pt = new Vec(e.clientX, e.clientY)
+    var physicsPos = crabs.renderer.invTransform(pt)
+  }
+
+  this.mousedown = function(crabs, e) {
+  }
+
+  this.mouseup = function(crabs, e) {
+  }
 }
 
 function TestUI() {
@@ -253,7 +290,7 @@ function Crabs(canvas, ui) {
   this.init = function() {
     var me = this
 
-    var events = ['mousemove', 'click', 'keypress']
+    var events = ['mousemove', 'mousedown', 'mouseup', 'click', 'keypress']
     events.forEach(function(name) {
       var listeners = me.hooks.filter(function(l) {
         return typeof(l[name]) != 'undefined'
