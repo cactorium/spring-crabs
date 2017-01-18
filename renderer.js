@@ -3,6 +3,7 @@ function Renderer() {
   this.MASS_RADIUS = 3.0
   this.MASS_SELECT_RADIUS = 7.0
   this.SPRING_SELECT_RADIUS = 2.0
+  this.MUSCLE_RADIUS = 1.0
 
   this.MASS_COLOR = '#222222'
   this.SELECTED_MASS_COLOR = '#111111'
@@ -62,10 +63,15 @@ function Renderer() {
           var aPos = me.p2s(crabs, a.pos),
               bPos = me.p2s(crabs, b.pos)
           if (physics.muscles[id]) {
-            canvas.strokeStyle = '#000000'
+            canvas.strokeStyle = '#442222'
             canvas.beginPath()
             canvas.moveTo(aPos.x, aPos.y)
             canvas.lineTo(bPos.x, bPos.y)
+            canvas.stroke()
+
+            var center = Vec.scale(0.5, Vec.add(aPos, bPos))
+            canvas.beginPath()
+            canvas.arc(center.x, center.y, me.MUSCLE_RADIUS, 0, Math.PI*2)
             canvas.stroke()
           } else {
             canvas.strokeStyle = '#222222'
