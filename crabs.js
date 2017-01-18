@@ -13,20 +13,6 @@ log.INFO  = 1
 log.WARN  = 2
 log.ERR   = 3
 
-var mass = function(x, y, vx, vy, m) {
-  return {
-    pos: new Vec(x, y),
-    vel: new Vec(vx, vy),
-    forc: new Vec(0.0, 0.0),
-    m: m
-  }
-}
-var spring = function(ida, idb, l, k) {
-  return {
-    ida: ida, idb: idb, l: l, k: k
-  }
-}
-
 var time = function(t, f) {
   var start = performance.now()
   f()
@@ -42,7 +28,7 @@ function Crabs(canvas, ui) {
   this.physics = new Physics()
   this.renderer = new Renderer()
   this.ui = new UI()
-  this.components = [this.physics, this.renderer]
+  this.components = [this.physics, this.ui, this.renderer]
   this.hooks = [this.ui, new TestUI()]
   this.paused = false
   this.width = canvas.width
@@ -102,21 +88,21 @@ function Crabs(canvas, ui) {
     var newIdNum = this.lastId + 1
     var newId = newIdNum.toString()
     this.ids.push(newId)
-    this.physics.addMass(newId, pos, vel, this.physics.DEFAULT_MASS)
+    var ret = this.physics.addMass(newId, pos, vel, this.physics.DEFAULT_MASS)
     this.lastId = newIdNum
-    return newId
+    return ret
   }
 
   this.addSpring = function(m0, m1, r, k) {
     var newIdNum = this.lastId + 1
     var newId = newIdNum.toString()
     this.ids.push(newId)
-    this.physics.addSpring(newId, m0, m1, r, k)
+    var ret = this.physics.addSpring(newId, m0, m1, r, k)
     this.lastId = newIdNum
-    return newId
+    return ret
   }
 
-  this.addMuscle = function(m0, m1, r, k, l, p) {
-    // TODO
+  this.addMuscle = function(s, r, a, p) {
+    return this.physics.addMuscle(s, r, a, p)
   }
 }

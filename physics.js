@@ -1,5 +1,24 @@
 'use strict'
 
+var mass = function(x, y, vx, vy, m) {
+  return {
+    pos: new Vec(x, y),
+    vel: new Vec(vx, vy),
+    forc: new Vec(0.0, 0.0),
+    m: m
+  }
+}
+var spring = function(ida, idb, l, k) {
+  return {
+    ida: ida, idb: idb, l: l, k: k
+  }
+}
+var muscle = function(r, a, p) {
+  return {
+    r: r, a: a, p: p
+  }
+}
+
 function Physics() {
   this.DEFAULT_MASS = 1.0
 
@@ -12,6 +31,8 @@ function Physics() {
   this.slip = 0.2
   this.bounce = 0.998
   this.dt = 1
+  this.wavetime = 0.0
+  this.wavestep = 0.05
 
   this.height = 520
   this.width = 1024
@@ -22,6 +43,13 @@ function Physics() {
     var me = this
     time(me.runtime, function() {
       crabs.ids.forEach(function(id) {
+        if (me.muscles[id]) {
+          var muscle = me.muscles[id]
+          var spring = me.springs[id]
+          if (spring) {
+            spring.l = muscle.r*(1.0+muscle.a*Math.sin(me.wavetime + muscle.p))
+          }
+        }
         if (me.springs[id]) {
           var spring = me.springs[id]
           var a = me.masses[spring.ida]
@@ -78,6 +106,10 @@ function Physics() {
         }
       })
     })
+    me.wavetime += me.wavestep
+    if (me.wavetime > 2*Math.PI) {
+      me.wavetime -= 2*Math.PI
+    }
   }
 
   this.resize = function(crabs) {
@@ -87,10 +119,23 @@ function Physics() {
 
   this.addMass = function(id, pos, vel, m) {
     this.masses[id] = mass(pos.x, pos.y, vel.x, vel.y, m)
+    return id
   }
 
   this.addSpring = function(id, m0, m1, r, k) {
+    if (!this.masses[m0] || !this.masses[m1]) {
+      throw 'invalid spring'
+    }
     this.springs[id] = spring(m0, m1, r, k)
+    return id
+  }
+
+  this.addMuscle = function(id, r, a, p) {
+    if (!this.springs[id]) {
+      throw 'invalid muscle'
+    }
+    this.muscles[id] = muscle(r, a, p)
+    return id
   }
 }
 

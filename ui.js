@@ -4,10 +4,25 @@ function UI() {
   this.selected = null
   this.itemSelected = false
   this.itemHovered = false
+  this.mouseDown = false
 
+  this.lastMousePos = null
+
+  this.run = function(crabs) {
+    if (this.itemSelected) {
+      if (crabs.physics.masses[this.selected]) {
+        var physicsPos = crabs.renderer.s2p(crabs, this.lastMousePos)
+        crabs.physics.masses[this.selected].pos = physicsPos
+      }
+    }
+  }
+
+  this.resize = function(c) {
+  }
 
   this.mousemove = function(crabs, e) {
     var pt = new Vec(e.clientX, e.clientY)
+    this.lastMousePos = pt
     var physicsPos = crabs.renderer.s2p(crabs, pt)
 
     // if one isn't already selected, find the closest object
@@ -40,17 +55,28 @@ function UI() {
       } else {
         this.selected = ''
       }
+    } else {
+      if (crabs.physics.masses[this.selected]) {
+        crabs.physics.masses[this.selected].pos = crabs.renderer.s2p(crabs, pt)
+      }
     }
   }
 
   this.mousedown = function(crabs, e) {
+    this.mouseDown = true 
+
+    if (this.selected != '') {
+      this.itemSelected = true
+    }
   }
 
   this.mouseup = function(crabs, e) {
+    this.mouseDown = false
+    this.itemSelected = false
   }
 
   this.keypress = function(crabs, e) {
-    if (e.key == 'p') {
+    if (e.key == 'p' || e.key == 'P') {
       crabs.paused = !crabs.paused
       if (!crabs.paused) {
         crabs.go()
