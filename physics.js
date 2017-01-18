@@ -28,6 +28,8 @@ function Physics() {
           var b = me.masses[spring.idb]
           var r = Vec.sub(a.pos, b.pos)
           var f = Vec.scale(spring.k * (Vec.mag(r) - spring.l), Vec.norm(r))
+          a.forc = Vec.sub(a.forc, f)
+          b.forc = Vec.add(b.forc, f)
         }
         if (me.masses[id]) {
           var mass = me.masses[id]

@@ -28,7 +28,7 @@ window.addEventListener('load', function() {
   crabs.init()
   var m1 = crabs.addMass(new Vec(50.0, 200.0), new Vec(0.0, 0.0))
   var m2 = crabs.addMass(new Vec(52.0, 200.0), new Vec(0.0, 0.0))
-  var s1 = crabs.addSpring(m1, m2, 100.0, 10.0)
+  var s1 = crabs.addSpring(m1, m2, 10.0, 0.1)
   crabs.go()
 
   window.addEventListener('resize', function() {
