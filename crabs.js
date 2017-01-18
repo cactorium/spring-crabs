@@ -94,6 +94,8 @@ function Crabs(canvas, ui) {
     this.components.forEach(function(c) {
       c.resize(this)
     })
+
+    this.renderer.run(this)
   }
 
   this.addMass = function(pos, vel) {

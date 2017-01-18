@@ -44,6 +44,15 @@ function UI() {
 
   this.mouseup = function(crabs, e) {
   }
+
+  this.keypress = function(crabs, e) {
+    if (e.key == 'p') {
+      crabs.paused = !crabs.paused
+      if (!crabs.paused) {
+        crabs.go()
+      }
+    }
+  }
 }
 
 function TestUI() {
