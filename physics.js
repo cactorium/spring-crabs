@@ -77,10 +77,11 @@ function Physics() {
         // reduce the jitteryness near the surface by requiring a minimum speed
         // to actually move
         var stick = function(x) {
-          if (x >= -0.07 && x <= 0.07) {
+          var threshold = 10.0*(1.0-me.bounce)
+          if (x >= -threshold && x <= threshold) {
             return 0.0
           } else {
-            return x - 0.07*Math.sign(x)
+            return x - threshold*Math.sign(x)
           }
         }
         if (me.masses[id]) {

@@ -58,8 +58,10 @@ function UI() {
     } else {
       if (crabs.physics.masses[this.selected]) {
         crabs.physics.masses[this.selected].pos = crabs.renderer.s2p(crabs, pt)
+        crabs.physics.masses[this.selected].vel = Vec.zero()
       }
     }
+    crabs.renderer.run(crabs)
   }
 
   this.mousedown = function(crabs, e) {
