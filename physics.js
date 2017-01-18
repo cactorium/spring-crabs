@@ -29,7 +29,7 @@ function Physics() {
   this.f = 0.0005
   this.g = new Vec(0.0, -0.0)
   this.slip = 0.2
-  this.bounce = 0.998
+  this.bounce = 0.99
   this.dt = 1
   this.wavetime = 0.0
   this.wavestep = 0.05
@@ -74,6 +74,15 @@ function Physics() {
         }
       })
       crabs.ids.forEach(function(id) {
+        // reduce the jitteryness near the surface by requiring a minimum speed
+        // to actually move
+        var stick = function(x) {
+          if (x >= -0.07 && x <= 0.07) {
+            return 0.0
+          } else {
+            return x - 0.07*Math.sign(x)
+          }
+        }
         if (me.masses[id]) {
           var mass = me.masses[id]
           var collisionTime = null
@@ -85,7 +94,7 @@ function Physics() {
           }
           if (collisionTime != null) {
             var collisionPos = Vec.add(mass.pos, Vec.scale(collisionTime, mass.vel))
-            mass.vel = new Vec(-me.bounce*mass.vel.x,
+            mass.vel = new Vec(-me.bounce*stick(mass.vel.x),
                               (1.0 - me.slip*Math.abs(mass.vel.x/Vec.mag(mass.vel)))*mass.vel.y)
             mass.pos = Vec.add(collisionPos, Vec.scale(-collisionTime, mass.vel))
           }
@@ -100,7 +109,7 @@ function Physics() {
           if (collisionTime != null) {
             var collisionPos = Vec.add(mass.pos, Vec.scale(collisionTime, mass.vel))
             mass.vel = new Vec((1.0 - me.slip*Math.abs(mass.vel.y/Vec.mag(mass.vel)))*mass.vel.x,
-                              -me.bounce*mass.vel.y)
+                              -me.bounce*stick(mass.vel.y))
             mass.pos = Vec.add(collisionPos, Vec.scale(-collisionTime, mass.vel))
           }
         }
