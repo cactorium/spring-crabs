@@ -15,14 +15,20 @@ canvas {
   left: 0;
 }
 </style>
+<script src="vec.js" type="text/javascript"></script>
 <script src="crabs.js" type="text/javascript"></script>
+<script src="physics.js" type="text/javascript"></script>
+<script src="renderer.js" type="text/javascript"></script>
+<script src="ui.js" type="text/javascript"></script>
 <script type="text/javascript">
 var crabs = null
 window.addEventListener('load', function() {
   console.log('test')
   crabs = new Crabs(document.getElementById('spring'), document.getElementById('ui'))
   crabs.init()
-  crabs.addMass(new Vec(50.0, 200.0), new Vec(50.0, 10.0))
+  var m1 = crabs.addMass(new Vec(50.0, 200.0), new Vec(0.0, 0.0))
+  var m2 = crabs.addMass(new Vec(52.0, 200.0), new Vec(0.0, 0.0))
+  var s1 = crabs.addSpring(m1, m2, 100.0, 10.0)
   crabs.go()
 
   window.addEventListener('resize', function() {
