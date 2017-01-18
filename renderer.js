@@ -2,12 +2,11 @@ function Renderer() {
   this.runtime = 0.0
   this.MASS_RADIUS = 3.0
   this.MASS_SELECT_RADIUS = 7.0
+  this.SPRING_SELECT_RADIUS = 2.0
 
   this.MASS_COLOR = '#222222'
   this.SELECTED_MASS_COLOR = '#111111'
   this.ACTIVE_MASS_COLOR = '#000000'
-
-  this.itemSelected = false
 
   // transform from physics to screen
   this.p2s = function(crabs, vec) {
@@ -34,15 +33,18 @@ function Renderer() {
           var screenPos = me.p2s(crabs, mass.pos)
           // log(log.DEBUG, 'mass ' + id + ' at ' + screenPos.x + ', ' + screenPos.y)
 
-          if (me.selected == id) {
-            // TOOD: draw selection symbol
-            if (me.itemSelected) {
+          if (crabs.ui.selected == id) {
+            if (crabs.ui.itemSelected) {
               canvas.strokeStyle = me.ACTIVE_MASS_COLOR
               canvas.fillStyle = me.ACTIVE_MASS_COLOR
             } else {
               canvas.strokeStyle = me.SELECTED_MASS_COLOR
               canvas.fillStyle = me.SELECTED_MASS_COLOR
             }
+
+            canvas.beginPath()
+            canvas.arc(screenPos.x, screenPos.y, me.MASS_SELECT_RADIUS, 0, Math.PI*2)
+            canvas.stroke()
           } else {
             canvas.fillStyle = me.MASS_COLOR
           }
@@ -50,12 +52,6 @@ function Renderer() {
           canvas.beginPath()
           canvas.arc(screenPos.x, screenPos.y, me.MASS_RADIUS, 0, Math.PI*2)
           canvas.fill()
-
-          if (me.selected == id) {
-            canvas.beginPath()
-            canvas.arc(screenPos.x, screenPos.y, 0, Math.PI*2, me.MASS_SELECT_RADIUS)
-            canvas.stroke()
-          }
         }
       })
       crabs.ids.forEach(function(id) {
@@ -70,19 +66,20 @@ function Renderer() {
             canvas.beginPath()
             canvas.moveTo(aPos.x, aPos.y)
             canvas.lineTo(bPos.x, bPos.y)
-            canvas.closePath()
             canvas.stroke()
           } else {
             canvas.strokeStyle = '#222222'
             canvas.beginPath()
             canvas.moveTo(aPos.x, aPos.y)
             canvas.lineTo(bPos.x, bPos.y)
-            canvas.closePath()
             canvas.stroke()
           }
 
           if (crabs.ui.selected == id) {
-            // TODO: draw selection symbol
+            var center = Vec.scale(0.5, Vec.add(aPos, bPos))
+            canvas.beginPath()
+            canvas.arc(center.x, center.y, me.SPRING_SELECT_RADIUS, 0, Math.PI*2)
+            canvas.stroke()
           }
         }
       })
