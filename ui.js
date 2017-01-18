@@ -35,7 +35,11 @@ function UI() {
         }
       })
 
-      this.selected = foundId
+      if (distance < 50.0) {
+        this.selected = foundId
+      } else {
+        this.selected = ''
+      }
     }
   }
 
