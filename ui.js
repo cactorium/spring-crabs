@@ -29,7 +29,7 @@ function UI() {
     if (!this.itemSelected) {
       var me = this
       var physics = crabs.physics
-      var distance = 1000000.0 // should be fine until people start having 100K screens
+      var distance = 50.0 // should be fine until people start having 100K screens
       var foundId = ''
       crabs.ids.forEach(function(id) {
         if (physics.masses[id]) {
@@ -50,18 +50,16 @@ function UI() {
         }
       })
 
-      if (distance < 50.0) {
-        this.selected = foundId
-      } else {
-        this.selected = ''
-      }
+      this.selected = foundId
     } else {
       if (crabs.physics.masses[this.selected]) {
         crabs.physics.masses[this.selected].pos = crabs.renderer.s2p(crabs, pt)
         crabs.physics.masses[this.selected].vel = Vec.zero()
       }
     }
-    crabs.renderer.run(crabs)
+    if (crabs.paused) {
+      crabs.renderer.run(crabs)
+    }
   }
 
   this.mousedown = function(crabs, e) {
