@@ -10,4 +10,4 @@ libc = "0.2.20"
 [replace]
 "glutin:0.7.4" = { path = "../glutin" }
 # "backtrace:*" = { git = "https://github.com/badboy/backtrace-rs", branch = "emscripten-fix" }
-
+"winit:0.5.10" = { path = "../winit" }

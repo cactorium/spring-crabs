@@ -5,3 +5,6 @@ spring-crabs.js: target/asmjs-unknown-emscripten/release/spring-crabs.js
 
 target/asmjs-unknown-emscripten/release/spring-crabs.js:
 	cargo build --target asmjs-unknown-emscripten --release -v
+
+clean:
+	rm target/asmjs-unknown-emscripten/release/spring-crabs.js

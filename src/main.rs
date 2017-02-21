@@ -6,10 +6,12 @@ use std::cell::RefCell;
 use std::ptr::null_mut;
 use std::os::raw::{c_int, c_void};
 
+use glium::glutin::Event;
 use glium::{DisplayBuild, Surface};
 
 fn main() {
     let display = glium:: glutin::WindowBuilder::new()
+        .with_dimensions(1024, 768)
         .with_depth_buffer(24)
         .build_glium().unwrap();
 
@@ -79,6 +81,16 @@ fn main() {
         target.draw(&vertex_buffer, &indices, &program, &uniforms,
                     &Default::default()).expect("Can't draw");
         target.finish().expect("Can't finish");
+
+        for e in display.poll_events() {
+            println!("{:?}", e);
+            match e {
+                Event::MouseMoved(x, _) => {
+                    t = x as f32 / 1024.0;
+                },
+                _ => {},
+            }
+        }
     });
 }
 
