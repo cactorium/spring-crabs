@@ -1,10 +1,13 @@
-build: spring-crabs.js
+build: spring_crabs.wasm
 
-spring-crabs.js: target/asmjs-unknown-emscripten/release/spring-crabs.js
-	cp target/asmjs-unknown-emscripten/release/spring-crabs.js .
+test:
+	cargo test
 
-target/asmjs-unknown-emscripten/release/spring-crabs.js:
-	cargo build --target asmjs-unknown-emscripten --release -v
+spring_crabs.wasm: target/wasm32-unknown-unknown/release/spring_crabs.wasm
+	wasm-gc target/wasm32-unknown-unknown/release/spring_crabs.wasm -o spring_crabs.wasm
+
+target/wasm32-unknown-unknown/release/spring_crabs.wasm: $(wildcard src/*.rs)
+	cargo build --target wasm32-unknown-unknown --release -v
 
 clean:
-	rm target/asmjs-unknown-emscripten/release/spring-crabs.js
+	rm target/asmjs-unknown-emscripten/release/spring_crabs.wasm
