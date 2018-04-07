@@ -1,3 +1,5 @@
+extern crate cgmath;
+
 mod arena;
 mod types;
 

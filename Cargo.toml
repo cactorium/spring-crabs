@@ -4,3 +4,6 @@ version = "0.0.1"
 
 [lib]
 crate-type = ["cdylib"]
+
+[dependencies]
+cgmath = "^0.16.1"
