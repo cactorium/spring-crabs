@@ -1,6 +1,7 @@
 extern crate cgmath;
 
-mod arena;
+mod world;
+mod physics;
 mod types;
 
 #[no_mangle]
