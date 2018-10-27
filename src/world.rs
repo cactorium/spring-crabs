@@ -89,7 +89,8 @@ impl <T, R: Id> IndexMut<R> for OptionalVec<T, R> {
 pub struct World {
     pub masses: OptionalVec<Mass, MassRef>,
     pub springs: OptionalVec<Spring<MassRef>, SpringRef>,
-    pub assemblies: Assemblies,
+    // root assembly
+    pub root: Assembly,
 }
 
 impl World {
@@ -97,34 +98,73 @@ impl World {
         World {
             masses: OptionalVec::new(),
             springs: OptionalVec::new(),
-            assemblies: Assemblies::new(),
+            root: Assembly::new(String::from("$root_assembly")),
         }
     }
-    pub fn mass_add(&mut self, mass: Mass) -> MassRef {
+    pub fn add_mass(&mut self, mass: Mass) -> MassRef {
         let ret = self.masses.add(mass);
-        self.assemblies.free.masses.push(ret);
+        self.root.add_mass(ret);
         ret
     }
-    pub fn mass_add_to(&mut self, mass: Mass, path: &[usize]) -> Option<MassRef> {
-        // TODO
-        unimplemented!()
+    pub fn add_mass_to(&mut self, mass: Mass, path: &[usize]) -> Option<MassRef> {
+        if path.len() == 0 {
+            Some(self.add_mass(mass))
+        } else {
+            if self.root.check_path(path) {
+                let ret = self.masses.add(mass);
+                self.root.add_mass_to(ret, path);
+                Some(ret)
+            } else {
+                None
+            }
+        }
     }
-    pub fn mass_delete(&mut self, mr: MassRef) {
-        self.assemblies.mass_delete(mr);
-        let to_remove = self.assemblies.find_connected_springs(mr, &self);
+    pub fn move_mass_to(&mut self, mr: MassRef, path: &[usize]) -> bool {
+        if !self.root.check_path(path) {
+            false
+        } else {
+            self.root.delete_mass(mr);
+            self.root.add_mass_to(mr, path)
+        }
+    }
+    pub fn delete_mass(&mut self, mr: MassRef) {
+        self.root.delete_mass(mr);
+        let to_remove = self.root.find_connected_springs(mr, &self);
         for s_ref in to_remove {
             self.springs.remove(s_ref);
-            self.assemblies.spring_delete(s_ref);
+            self.root.delete_spring(s_ref);
         }
         self.masses.remove(mr);
     }
-    pub fn spring_add(&mut self, spring: Spring<MassRef>) -> SpringRef {
+    pub fn add_spring(&mut self, spring: Spring<MassRef>) -> SpringRef {
         let ret = self.springs.add(spring);
-        self.assemblies.free.springs.push(ret);
+        self.root.springs.push(ret);
         ret
     }
-    pub fn spring_delete(&mut self, sr: SpringRef) {
-        self.assemblies.spring_delete(sr);
+    pub fn add_spring_to(&mut self, spring: Spring<MassRef>, path: &[usize]) -> Option<SpringRef> {
+        if path.len() == 0 {
+            Some(self.add_spring(spring))
+        } else {
+            if self.root.check_path(path) {
+                let ret = self.springs.add(spring);
+                self.root.add_spring_to(ret, path);
+                Some(ret)
+            } else {
+                None
+            }
+        }
+    }
+    pub fn move_spring_to(&mut self, sr: SpringRef, path: &[usize]) -> bool {
+        if !self.root.check_path(path) {
+            false
+        } else {
+            self.root.delete_spring(sr);
+            self.root.add_spring_to(sr, path)
+        }
+    }
+
+    pub fn delete_spring(&mut self, sr: SpringRef) {
+        self.root.delete_spring(sr);
         self.springs.remove(sr)
     }
 }
@@ -155,70 +195,49 @@ impl IndexMut<SpringRef> for World {
 }
 
 
-pub struct Assemblies {
-    pub assemblies: Vec<Assembly>,
-    pub free: Assembly
-}
-
-impl Assemblies {
-    fn new() -> Assemblies {
-        Assemblies {
-            assemblies: Vec::new(),
-            free: Assembly::new(),
-        }
-    }
-    fn mass_add(&mut self, mr: MassRef) {
-        for ref mut assembly in &mut self.assemblies {
-            assembly.mass_add(mr);
-        }
-        self.free.mass_add(mr);
-    }
-    fn mass_delete(&mut self, mr: MassRef) {
-        for ref mut assembly in &mut self.assemblies {
-            assembly.mass_delete(mr);
-        }
-        self.free.mass_delete(mr);
-    }
-    fn spring_add(&mut self, sr: SpringRef) {
-        for ref mut assembly in &mut self.assemblies {
-            assembly.spring_add(sr);
-        }
-        self.free.spring_add(sr);
-    }
-    fn spring_delete(&mut self, sr: SpringRef) {
-        for ref mut assembly in &mut self.assemblies {
-            assembly.spring_delete(sr);
-        }
-        self.free.spring_delete(sr);
-    }
-    fn find_connected_springs(&self, mr: MassRef, w: &World) -> impl Iterator<Item=SpringRef> {
-        self.assemblies
-            .iter()
-            .flat_map(|assembly| assembly.find_connected_springs(mr, w))
-            .chain(self.free.find_connected_springs(mr, w))
-            .collect::<Vec<_>>()
-            .into_iter()
-    }
-}
-
 pub struct Assembly {
+    pub name: String,
     pub masses: Vec<MassRef>,
     pub springs: Vec<SpringRef>,
     pub subassemblies: Vec<Assembly>
 }
 
 impl Assembly {
-    fn new() -> Assembly {
+    fn new(assembly_name: String) -> Assembly {
         Assembly {
+            name: assembly_name,
             masses: Vec::new(),
             springs: Vec::new(),
             subassemblies: Vec::new()
         }
     }
-    fn mass_add(&mut self, mr: MassRef) {
+    fn check_path(&self, path: &[usize]) -> bool {
+        if path.len() == 0 {
+            true
+        } else {
+            if self.subassemblies.len() <= path[0] {
+                false
+            } else {
+                self.subassemblies[path[0]].check_path(&path[1..])
+            }
+        }
+    }
+    fn add_mass(&mut self, mr: MassRef) {
         self.masses.push(mr);
     }
-    fn mass_delete(&mut self, mr: MassRef) {
+    fn add_mass_to(&mut self, mr: MassRef, path: &[usize]) -> bool {
+        if path.len() == 0 {
+            self.add_mass(mr);
+            true
+        } else {
+            if self.subassemblies.len() > path[0] {
+                self.subassemblies[path[0]].add_mass_to(mr, &path[1..])
+            } else {
+                false
+            }
+        }
+    }
+    fn delete_mass(&mut self, mr: MassRef) {
         let to_remove = self.masses
             .iter()
             .enumerate()
@@ -233,10 +252,22 @@ impl Assembly {
             self.masses.swap_remove(i);
         }
     }
-    fn spring_add(&mut self, sr: SpringRef) {
+    fn add_spring(&mut self, sr: SpringRef) {
         self.springs.push(sr);
     }
-    fn spring_delete(&mut self, sr: SpringRef) {
+    fn add_spring_to(&mut self, sr: SpringRef, path: &[usize]) -> bool {
+        if path.len() == 0 {
+            self.add_spring(sr);
+            true
+        } else {
+            if self.subassemblies.len() > path[0] {
+                self.subassemblies[path[0]].add_spring_to(sr, &path[1..])
+            } else {
+                false
+            }
+        }
+    }
+    fn delete_spring(&mut self, sr: SpringRef) {
         let to_remove = self.springs
             .iter()
             .enumerate()
@@ -248,7 +279,6 @@ impl Assembly {
             self.springs.swap_remove(i);
         }
     }
-
     fn find_connected_springs(&self, mr: MassRef, w: &World) -> impl Iterator<Item=SpringRef> {
         self.springs
             .iter()
