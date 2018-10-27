@@ -4,38 +4,32 @@ use cgmath::Vector2;
 use super::world::*;
 use super::types::*;
 
-/*
-pub fn tick(arena: &mut Arena, env: &Environment, timestep: Unit) {
-    arena.with_mut(|masses: &mut [Mass], springs: &mut [Spring<MassIndex>]| {
-        for ref mut mass in masses.into_iter() {
-            mass.acceleration = Vector2::<Unit>::zero();
-        }
-        for ref spring in springs.into_iter() {
-            // TODO: make more ergonomic by exposing ViewMut and implementing an Iterator
-            // for ViewMut, so that this doesn't need to work in raw indices
-            let a: usize = spring.endpoints[0].into();
-            let b: usize = spring.endpoints[1].into();
-            let dx = masses[a].position - masses[b].position;
-            let strain = dx.magnitude() - spring.length;
-            let k = spring.stiffness.map_or(env.springiness, |x| x);
-            let force = k * strain * dx.normalize();
-            let m1 = masses[a].mass.map_or(1.0, |x| x);
-            let m2 = masses[b].mass.map_or(1.0, |x| x);
+pub fn tick(world: &mut World, env: &Environment, timestep: Unit) {
+    for (_, ref mut mass) in world.masses.iter_mut() {
+        mass.acc = Vector2::<Unit>::zero();
+    }
+    for (_, ref spring) in world.springs.iter() {
+        let a = spring.endpoints[0];
+        let b = spring.endpoints[1];
+        let dx = world.masses[a].pos - world.masses[b].pos;
+        let strain = dx.magnitude() - spring.length;
+        let k = spring.stiffness.map_or(env.springiness, |x| x);
+        let force = k * strain * dx.normalize();
+        let m1 = world.masses[a].mass.map_or(1.0, |x| x);
+        let m2 = world.masses[b].mass.map_or(1.0, |x| x);
 
-            masses[a].acceleration = masses[a].acceleration + force/m1;
-            masses[b].acceleration = masses[b].acceleration + force/m2;
-        }
+        world.masses[a].acc = world.masses[a].acc + force/m1;
+        world.masses[b].acc = world.masses[b].acc + force/m2;
+    }
 
-        for ref mut mass in masses.into_iter() {
-            if mass.fixed {
-                continue;
-            }
-            // TODO: simulate time step
+    for (_, ref mut mass) in world.masses.iter() {
+        if mass.fixed {
+            continue;
         }
+        // TODO: simulate time step
+    }
 
-        for ref mut mass in masses.into_iter() {
-            // TODO: detect wall collisions
-        }
-    });
+    for ref mut mass in world.masses.iter_mut() {
+        // TODO: detect wall collisions
+    }
 }
-*/

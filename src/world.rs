@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Weak;
-
 use std::ops::Index;
 use std::ops::IndexMut;
 
@@ -104,7 +101,13 @@ impl World {
         }
     }
     pub fn mass_add(&mut self, mass: Mass) -> MassRef {
-        self.masses.add(mass)
+        let ret = self.masses.add(mass);
+        self.assemblies.free.masses.push(ret);
+        ret
+    }
+    pub fn mass_add_to(&mut self, mass: Mass, path: &[usize]) -> Option<MassRef> {
+        // TODO
+        unimplemented!()
     }
     pub fn mass_delete(&mut self, mr: MassRef) {
         self.assemblies.mass_delete(mr);
@@ -116,7 +119,9 @@ impl World {
         self.masses.remove(mr);
     }
     pub fn spring_add(&mut self, spring: Spring<MassRef>) -> SpringRef {
-        self.springs.add(spring)
+        let ret = self.springs.add(spring);
+        self.assemblies.free.springs.push(ret);
+        ret
     }
     pub fn spring_delete(&mut self, sr: SpringRef) {
         self.assemblies.spring_delete(sr);
@@ -264,7 +269,7 @@ mod test {
     fn test_spring_borrow() {
         let mut w = World::new();
         for (_, s) in w.springs.iter() {
-            w.masses[s.endpoints[0]].acceleration = w.masses[s.endpoints[1]].acceleration;
+            w.masses[s.endpoints[0]].acc = w.masses[s.endpoints[1]].acc;
         }
     }
     // TODO
