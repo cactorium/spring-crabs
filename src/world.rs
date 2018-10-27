@@ -3,6 +3,9 @@ use std::ops::IndexMut;
 
 use std::marker::PhantomData;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use super::types::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -86,11 +89,27 @@ impl <T, R: Id> IndexMut<R> for OptionalVec<T, R> {
     }
 }
 
+pub trait Extension {
+    /// NOTE: all of these are listed as immutable so any implementer
+    /// will need to use RefCells in their implementations
+    fn add_mass(&self, mr: MassRef);
+    fn delete_mass(&self, mr: MassRef);
+    fn add_spring(&self, sr: SpringRef);
+    fn delete_spring(&self, sr: SpringRef);
+}
+
 pub struct World {
     pub masses: OptionalVec<Mass, MassRef>,
     pub springs: OptionalVec<Spring<MassRef>, SpringRef>,
-    // root assembly
+    // root assembly; masses and springs will be referred to from exactly one
+    // assembly within the root assembly
+    // this allows assemblies and subassemblies of masses/springs
+    // to be made, making it easy to duplicate features
     pub root: Assembly,
+    // extensions; different features that need to be kept in lockstep with
+    // the mass/spring lists
+    // like selection lists, barsprings, muscles, etc.
+    pub extensions: Vec<Rc<Extension>>
 }
 
 impl World {
@@ -99,11 +118,15 @@ impl World {
             masses: OptionalVec::new(),
             springs: OptionalVec::new(),
             root: Assembly::new(String::from("$root_assembly")),
+            extensions: Vec::new(),
         }
     }
     pub fn add_mass(&mut self, mass: Mass) -> MassRef {
         let ret = self.masses.add(mass);
         self.root.add_mass(ret);
+        for extension in &self.extensions {
+            extension.add_mass(ret);
+        }
         ret
     }
     pub fn add_mass_to(&mut self, mass: Mass, path: &[usize]) -> Option<MassRef> {
@@ -113,6 +136,9 @@ impl World {
             if self.root.check_path(path) {
                 let ret = self.masses.add(mass);
                 self.root.add_mass_to(ret, path);
+                for extension in &self.extensions {
+                    extension.add_mass(ret);
+                }
                 Some(ret)
             } else {
                 None
@@ -134,11 +160,17 @@ impl World {
             self.springs.remove(s_ref);
             self.root.delete_spring(s_ref);
         }
+        for extension in &self.extensions {
+            extension.delete_mass(mr);
+        }
         self.masses.remove(mr);
     }
     pub fn add_spring(&mut self, spring: Spring<MassRef>) -> SpringRef {
         let ret = self.springs.add(spring);
         self.root.springs.push(ret);
+        for extension in &self.extensions {
+            extension.add_spring(ret);
+        }
         ret
     }
     pub fn add_spring_to(&mut self, spring: Spring<MassRef>, path: &[usize]) -> Option<SpringRef> {
@@ -148,6 +180,9 @@ impl World {
             if self.root.check_path(path) {
                 let ret = self.springs.add(spring);
                 self.root.add_spring_to(ret, path);
+                for extension in &self.extensions {
+                    extension.add_spring(ret);
+                }
                 Some(ret)
             } else {
                 None
@@ -165,6 +200,9 @@ impl World {
 
     pub fn delete_spring(&mut self, sr: SpringRef) {
         self.root.delete_spring(sr);
+        for extension in &self.extensions {
+            extension.delete_spring(sr);
+        }
         self.springs.remove(sr)
     }
 }
@@ -303,4 +341,19 @@ mod test {
         }
     }
     // TODO
+    //
+    struct TestExtension;
+    impl Extension for TestExtension {
+        fn add_mass(&self, _: MassRef) {}
+        fn delete_mass(&self, _: MassRef) {}
+        fn add_spring(&self, _: SpringRef) {}
+        fn delete_spring(&self, _: SpringRef) {}
+    }
+
+    #[test]
+    fn test_extension_cast() {
+        let test = Rc::new(TestExtension);
+        let mut w = World::new();
+        w.extensions.push(test.clone());
+    }
 }
