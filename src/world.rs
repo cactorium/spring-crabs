@@ -3,7 +3,6 @@ use std::ops::IndexMut;
 
 use std::marker::PhantomData;
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::types::*;
@@ -96,6 +95,8 @@ pub trait Extension {
     fn delete_mass(&self, mr: MassRef);
     fn add_spring(&self, sr: SpringRef);
     fn delete_spring(&self, sr: SpringRef);
+    fn pre_tick(&self, timestep: Unit, world: &mut World) {}
+    fn post_tick(&self, timestep: Unit, world: &mut World) {}
 }
 
 pub struct World {
@@ -109,7 +110,7 @@ pub struct World {
     // extensions; different features that need to be kept in lockstep with
     // the mass/spring lists
     // like selection lists, barsprings, muscles, etc.
-    pub extensions: Vec<Rc<Extension>>
+    pub extensions: Vec<Rc<dyn Extension>>
 }
 
 impl World {
@@ -155,10 +156,13 @@ impl World {
     }
     pub fn delete_mass(&mut self, mr: MassRef) {
         self.root.delete_mass(mr);
-        let to_remove = self.root.find_connected_springs(mr, &self);
+        let to_remove = self.root.find_and_delete_connected_springs(mr, &self.springs);
         for s_ref in to_remove {
             self.springs.remove(s_ref);
-            self.root.delete_spring(s_ref);
+            // self.root.delete_spring(s_ref);
+            for extension in &self.extensions {
+                extension.delete_spring(s_ref);
+            }
         }
         for extension in &self.extensions {
             extension.delete_mass(mr);
@@ -317,13 +321,21 @@ impl Assembly {
             self.springs.swap_remove(i);
         }
     }
-    fn find_connected_springs(&self, mr: MassRef, w: &World) -> impl Iterator<Item=SpringRef> {
-        self.springs
+    fn find_and_delete_connected_springs(&mut self, mr: MassRef, springs: &OptionalVec<Spring<MassRef>, SpringRef>) -> impl Iterator<Item=SpringRef> {
+        let to_remove = self.springs
             .iter()
-            .filter(|&s| w[*s].endpoints[0] == mr || w[*s].endpoints[1] == mr)
-            .map(|s| *s)
-            .chain(self.subassemblies.iter()
-                   .flat_map(|assembly| assembly.find_connected_springs(mr, w)))
+            .enumerate()
+            .filter(|(_, &s)| springs[s].endpoints[0] == mr || springs[s].endpoints[1] == mr)
+            .map(|(i, &s)| (i, s))
+            .collect::<Vec<_>>();
+        for (idx, _) in to_remove.iter().rev() {
+            self.springs.remove(*idx);
+        }
+        to_remove
+            .into_iter()
+            .map(|(_, s)| s)
+            .chain(self.subassemblies.iter_mut()
+                   .flat_map(|assembly| assembly.find_and_delete_connected_springs(mr, springs)))
             .collect::<Vec<_>>()
             .into_iter()
     }

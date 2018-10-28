@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use cgmath::prelude::*;
 use cgmath::Vector2;
 
@@ -11,7 +13,12 @@ pub fn mass_step(mass: &mut Mass, timestep: Unit) {
     mass.pos = mass.pos + mass.vel * timestep;
 }
 
-pub fn tick(world: &mut World, env: &Environment, timestep: Unit) {
+// NOTE: using a copy of the extension list so that the extensions can modify the world;
+// otherwise it'd be messy to mutably borrow the masses and springs for each extension
+pub fn tick(world: &mut World, env: &Environment, extensions: &[Rc<Extension>], timestep: Unit) {
+    for extension in extensions {
+        extension.pre_tick(timestep, world);
+    }
     for (_, ref mut mass) in world.masses.iter_mut() {
         mass.acc = Vector2::<Unit>::zero();
     }
@@ -38,5 +45,9 @@ pub fn tick(world: &mut World, env: &Environment, timestep: Unit) {
 
     for ref mut mass in world.masses.iter_mut() {
         // TODO: detect wall collisions
+    }
+
+    for extension in extensions {
+        extension.post_tick(timestep, world);
     }
 }
